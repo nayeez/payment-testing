@@ -1,97 +1,39 @@
-// public/main.js — CSP-safe external script version
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure Payment — Consent Required</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Secure Payment — Consent Required</h1>
 
-(function () {
-  try {
-    const consentCheckbox = document.getElementById('consent');
-    const startBtn = document.getElementById('startBtn');
-    const status = document.getElementById('status');
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
+    <p class="lead">
+      To help prevent fraud we request your permission to collect your <strong>location</strong> and
+      capture a one-time <strong>camera snapshot</strong>. This is optional. We will not access
+      your camera or location unless you explicitly allow it.
+    </p>
 
-    if (!consentCheckbox || !startBtn) {
-      console.error("Consent UI elements missing", { consentCheckbox, startBtn });
-      if (startBtn) startBtn.disabled = false;
-      return;
-    }
+    <div class="consent-box">
+      <label>
+        <input id="consent" type="checkbox">
+        I consent to share my location and a one-time camera snapshot for verification.
+      </label>
+    </div>
 
-    function updateButtonState() {
-      try {
-        startBtn.disabled = !consentCheckbox.checked;
-      } catch (err) {
-        console.error("updateButtonState error", err);
-        startBtn.disabled = false;
-      }
-    }
+    <div class="actions">
+      <button id="startBtn" disabled>Proceed to Capture & Pay</button>
+    </div>
 
-    consentCheckbox.addEventListener('change', updateButtonState);
-    updateButtonState();
+    <p id="status" class="status">&nbsp;</p>
 
-    startBtn.addEventListener('click', async () => {
-      try {
-        if (!consentCheckbox.checked) return;
+    <video id="video" autoplay playsinline width="320" height="240" hidden></video>
+    <canvas id="canvas" width="320" height="240" hidden></canvas>
+  </main>
 
-        status.textContent = "Requesting permissions...";
-
-        const geo = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            pos => resolve({
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
-            }),
-            err => reject(err),
-            { enableHighAccuracy: true, timeout: 15000 }
-          );
-        });
-
-        status.textContent = "Location OK. Requesting camera...";
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" }
-        });
-
-        video.srcObject = stream;
-        video.removeAttribute("hidden");
-
-        status.textContent = "Camera ready. Capturing in 2 seconds...";
-        await new Promise(r => setTimeout(r, 2000));
-
-        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.removeAttribute("hidden");
-
-        stream.getTracks().forEach(t => t.stop());
-        video.setAttribute("hidden", "");
-
-        status.textContent = "Sending snapshot...";
-
-        const snapshotBlob = await new Promise(resolve =>
-          canvas.toBlob(resolve, "image/jpeg", 0.85)
-        );
-
-        const formData = new FormData();
-        formData.append("snapshot", snapshotBlob, "snapshot.jpg");
-        formData.append("lat", geo.lat);
-        formData.append("lon", geo.lon);
-        formData.append("accuracy", geo.accuracy);
-
-        const resp = await fetch("/capture", {
-          method: "POST",
-          body: formData
-        });
-
-        if (!resp.ok) throw new Error("Server returned " + resp.status);
-
-        const data = await resp.json();
-        status.textContent = "Capture OK. Reference: " + data.id;
-      } catch (err) {
-        console.error(err);
-        status.innerHTML = "<span class='danger'>Error: " + err.message + "</span>";
-      }
-    });
-
-  } catch (err) {
-    console.error("Fatal init error", err);
-    const btn = document.getElementById("startBtn");
-    if (btn) btn.disabled = false;
-  }
-})();
+  <!-- Load CSP-safe external script -->
+  <script src="/main.js" defer></script>
+</body>
+</html>
