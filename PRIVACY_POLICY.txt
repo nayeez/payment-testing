@@ -1,3 +1,0 @@
-Privacy policy (short):
-
-We request your permission to access your device's location and camera only to verify this transaction and prevent fraud. This is optional — you may proceed without granting permission. We will store the minimum information required (timestamp, IP address, one camera snapshot, and approximate location) for fraud investigation only. Data is retained for a limited period and deleted on request. For full details contact the site administrator.
